@@ -37,12 +37,19 @@
 
   /* TEAM CARDS */
   .team-cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:24px;}
-  .team-card{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color .2s, opacity .2s;}
-  .team-card:focus-within{border-color:var(--accent);}
+  .team-card{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color .2s,opacity .2s,transform .15s;cursor:default;}
+  .team-card.dragging{opacity:.35;transform:scale(.97);}
+  .team-card.drag-over{border-color:var(--accent);background:rgba(245,200,66,.04);}
   .team-card.inactive{opacity:.35;pointer-events:none;}
   .team-card-header{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02);}
-  .team-num{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:var(--accent);min-width:26px;letter-spacing:1px;}
-  .team-name-input{background:transparent;border:none;outline:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;width:100%;}
+  .drag-handle{color:var(--muted);font-size:1.1rem;cursor:grab;padding:0 2px;line-height:1;flex-shrink:0;touch-action:none;}
+  .drag-handle:active{cursor:grabbing;}
+  .seed-rank-badge{font-family:'Bebas Neue',sans-serif;font-size:1rem;color:var(--accent);min-width:20px;letter-spacing:1px;flex-shrink:0;}
+  .pool-badge-inline{font-size:.62rem;padding:2px 7px;border-radius:10px;font-weight:600;letter-spacing:.5px;white-space:nowrap;flex-shrink:0;}
+  .badge-A{background:rgba(90,180,232,.15);color:var(--accent3);}
+  .badge-B{background:rgba(232,132,90,.15);color:var(--accent2);}
+  .badge-C{background:rgba(76,175,125,.15);color:var(--win);}
+  .team-name-input{background:transparent;border:none;outline:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;width:100%;min-width:0;}
   .team-name-input::placeholder{color:var(--muted);}
   .team-members{padding:8px 14px;display:flex;flex-direction:column;gap:6px;}
   .member-row{display:flex;align-items:center;gap:8px;}
@@ -158,7 +165,7 @@
 
 <div class="tabs">
   <button class="tab active" onclick="showTab('equipes',event)">Équipes</button>
-  <button class="tab" onclick="showTab('poules',event)">Poules</button>
+  <button class="tab" onclick="showTab('pools',event)">Pools</button>
   <button class="tab" onclick="showTab('matchs',event)">Matchs</button>
   <button class="tab" onclick="showTab('finale',event)">Finale</button>
 </div>
@@ -166,7 +173,10 @@
 <!-- ========== ÉQUIPES ========== -->
 <div id="equipes" class="view active">
   <div class="section-title">Noms & membres des équipes</div>
-  <p style="font-size:.83rem;color:var(--muted);margin-bottom:14px">Entrez le nom de l'équipe et les 2 membres. Les équipes grisées ne participent pas selon le nombre sélectionné.</p>
+  <div class="seed-section-header">
+    <p style="font-size:.83rem;color:var(--muted)">Glissez une carte ⠿ pour ajuster le seeding. Le rang détermine les pools et l'avantage power pool.</p>
+    <button class="seed-reset-btn" onclick="resetSeeding()">↺ Seeding par défaut</button>
+  </div>
   <div class="team-cards-grid" id="team-cards-grid"></div>
   <div class="section-title" style="margin-top:32px">Résumé du format</div>
   <div class="rules-grid">
@@ -186,19 +196,19 @@
 </div>
 
 <!-- ========== POULES ========== -->
-<div id="poules" class="view">
+<div id="pools" class="view">
   <div class="info-bar">⚡ Classement power pool dynamique — mis à jour automatiquement via l'onglet Matchs</div>
   <div class="pools-grid">
     <div class="pool-card pool-A">
-      <div class="pool-header"><span>Poule A</span><span id="pool-A-sub" style="font-size:.75rem;font-family:'DM Sans';font-weight:400;color:var(--muted)"></span></div>
+      <div class="pool-header"><span>Pool A</span><span id="pool-A-sub" style="font-size:.75rem;font-family:'DM Sans';font-weight:400;color:var(--muted)"></span></div>
       <table class="standings"><thead><tr><th>#</th><th>Équipe</th><th>V</th><th>D</th></tr></thead><tbody id="standings-A"></tbody></table>
     </div>
     <div class="pool-card pool-B">
-      <div class="pool-header"><span>Poule B</span><span id="pool-B-sub" style="font-size:.75rem;font-family:'DM Sans';font-weight:400;color:var(--muted)"></span></div>
+      <div class="pool-header"><span>Pool B</span><span id="pool-B-sub" style="font-size:.75rem;font-family:'DM Sans';font-weight:400;color:var(--muted)"></span></div>
       <table class="standings"><thead><tr><th>#</th><th>Équipe</th><th>V</th><th>D</th></tr></thead><tbody id="standings-B"></tbody></table>
     </div>
     <div class="pool-card pool-C">
-      <div class="pool-header"><span>Poule C</span><span id="pool-C-sub" style="font-size:.75rem;font-family:'DM Sans';font-weight:400;color:var(--muted)"></span></div>
+      <div class="pool-header"><span>Pool C</span><span id="pool-C-sub" style="font-size:.75rem;font-family:'DM Sans';font-weight:400;color:var(--muted)"></span></div>
       <table class="standings"><thead><tr><th>#</th><th>Équipe</th><th>V</th><th>D</th></tr></thead><tbody id="standings-C"></tbody></table>
     </div>
   </div>
@@ -211,15 +221,15 @@
 
 <!-- ========== MATCHS ========== -->
 <div id="matchs" class="view">
-  <div class="section-title">Poule A</div><div class="matches-list" id="matches-A"></div>
-  <div class="section-title">Poule B</div><div class="matches-list" id="matches-B"></div>
-  <div class="section-title">Poule C</div><div class="matches-list" id="matches-C"></div>
+  <div class="section-title">Pool A</div><div class="matches-list" id="matches-A"></div>
+  <div class="section-title">Pool B</div><div class="matches-list" id="matches-B"></div>
+  <div class="section-title">Pool C</div><div class="matches-list" id="matches-C"></div>
   <p class="note" style="margin-top:20px">🔵 Challenger choisit le jeu · Sélectionnez le jeu joué puis cliquez sur le gagnant</p>
 </div>
 
 <!-- ========== FINALE ========== -->
 <div id="finale" class="view">
-  <div class="info-bar">🏆 Top 2 de chaque poule + 2 meilleurs 3es · Cliquez sur le gagnant pour faire avancer le bracket</div>
+  <div class="info-bar">🏆 Top 2 de chaque pool + 2 meilleurs 3es · Cliquez sur le gagnant pour faire avancer le bracket</div>
   <div class="section-title">Bracket</div>
   <div class="bracket-container">
     <div class="bracket">
@@ -245,7 +255,7 @@
       <li>Égalité 1-1 → 3e jeu tiré au sort</li>
     </ul></div>
     <div class="rule-card"><h3>⚡ Avantage du seed</h3><ul>
-      <li>Récompense la performance en poules</li>
+      <li>Récompense la performance en pools</li>
       <li>Choisir en premier = avantage stratégique</li>
     </ul></div>
   </div>
@@ -253,18 +263,37 @@
 
 <script>
 // ─── POOL CONFIGURATIONS ─────────────────────────────────────
-// Serpentin seeding for each team count
-const poolConfigs = {
-  15: { A:[1,6,7,12,13], B:[2,5,8,11,14], C:[3,4,9,10,15] },
-  14: { A:[1,6,7,12,13], B:[2,5,8,11,14], C:[3,4,9,10]    },
-  13: { A:[1,6,7,12],    B:[2,5,8,11,13], C:[3,4,9,10]    },
+// Serpentin seeding — slot counts per team count
+const poolSlots = {
+  15: { A:[0,5,6,11,12], B:[1,4,7,10,13], C:[2,3,8,9,14] },
+  14: { A:[0,5,6,11,12], B:[1,4,7,10,13], C:[2,3,8,9]    },
+  13: { A:[0,5,6,11],    B:[1,4,7,10,12], C:[2,3,8,9]    },
 };
+
+// Build pool config from current seedOrder and teamCount
+function buildPoolConfig(){
+  const slots=poolSlots[teamCount];
+  const active=seedOrder.slice(0,teamCount); // only active teams
+  return {
+    A: slots.A.filter(i=>i<teamCount).map(i=>active[i]),
+    B: slots.B.filter(i=>i<teamCount).map(i=>active[i]),
+    C: slots.C.filter(i=>i<teamCount).map(i=>active[i]),
+  };
+}
 
 const games = ['Poches','Couilles','Washers','KanJam','Spikeball'];
 const gameClass = { Poches:'poches', Couilles:'couilles', Washers:'washers', KanJam:'kanjam', Spikeball:'spikeball' };
 
 // ─── APP STATE ───────────────────────────────────────────────
 let teamCount = 15;
+
+// seedOrder[i] = team number at rank i+1 (0-indexed). Always length 15.
+let seedOrder = Array.from({length:15},(_,i)=>i+1);
+
+function resetSeeding(){
+  seedOrder = Array.from({length:15},(_,i)=>i+1);
+  initPools(); resetBracket(); renderTeamCards(); renderAll();
+}
 
 const teamData = {};
 for(let i=1;i<=15;i++) teamData[i]={name:'', m1:'', m2:''};
@@ -297,7 +326,7 @@ function assignGames(matchups){
 }
 
 function initPools(){
-  poolsDef = poolConfigs[teamCount];
+  poolsDef = buildPoolConfig();
   poolState = {
     A:{seeds:[...poolsDef.A], matches:assignGames(generateMatchups(poolsDef.A))},
     B:{seeds:[...poolsDef.B], matches:assignGames(generateMatchups(poolsDef.B))},
@@ -450,52 +479,171 @@ function propagateBracket(){
   if(f.result!==null&&f.result!==f.t1&&f.result!==f.t2) f.result=null;
 }
 
-// ─── RENDER TEAM CARDS ───────────────────────────────────────
+// ─── RENDER TEAM CARDS (with built-in drag-and-drop seeding) ─
+let dragSrcIdx = null;
+
 function renderTeamCards(){
-  const grid=document.getElementById('team-cards-grid');
-  grid.innerHTML='';
-  for(let i=1;i<=15;i++){
-    const active=i<=teamCount;
-    const card=document.createElement('div');
-    card.className='team-card'+(active?'':' inactive');
-    card.innerHTML=`
+  const grid = document.getElementById('team-cards-grid');
+  const cfg = buildPoolConfig();
+  const teamPool = {};
+  ['A','B','C'].forEach(p => cfg[p].forEach(t => teamPool[t]=p));
+
+  // Preserve focus — don't re-render if a field is focused
+  if(grid.querySelector('input:focus')) {
+    // Just update badges and ranks without destroying DOM
+    grid.querySelectorAll('.team-card[data-seedidx]').forEach(card => {
+      const idx = parseInt(card.dataset.seedidx);
+      const teamNum = seedOrder[idx];
+      const pool = teamPool[teamNum] || '';
+      const badge = card.querySelector('.pool-badge-inline');
+      if(badge){ badge.className='pool-badge-inline'+(pool?' badge-'+pool:''); badge.textContent=pool?'Pool '+pool:''; }
+      const rank = card.querySelector('.seed-rank-badge');
+      if(rank) rank.textContent = idx+1;
+    });
+    updatePoolSummary(cfg);
+    return;
+  }
+
+  grid.innerHTML = '';
+  seedOrder.forEach((teamNum, idx) => {
+    const active = idx < teamCount;
+    const pool = teamPool[teamNum] || '';
+    const card = document.createElement('div');
+    card.className = 'team-card' + (active ? '' : ' inactive');
+    card.draggable = active;
+    card.dataset.seedidx = idx;
+    card.dataset.teamnum = teamNum;
+
+    card.innerHTML = `
       <div class="team-card-header">
-        <span class="team-num">${i}</span>
-        <input class="team-name-input" type="text" placeholder="Nom de l'équipe…" value="${teamData[i].name}"
-          oninput="teamData[${i}].name=this.value;renderAll();" maxlength="22" ${active?'':'disabled'}>
-        ${active?'':'<span class="inactive-badge">Inactif</span>'}
+        ${active ? '<span class="drag-handle" title="Glisser pour réordonner">⠿</span>' : ''}
+        <span class="seed-rank-badge">${idx+1}</span>
+        <input class="team-name-input" type="text" placeholder="Nom de l'équipe…"
+          value="${teamData[teamNum].name}" maxlength="22"
+          oninput="teamData[${teamNum}].name=this.value; softRenderAll();"
+          ${active?'':'disabled'}>
+        ${pool ? `<span class="pool-badge-inline badge-${pool}">Pool ${pool}</span>` : (active ? '<span class="pool-badge-inline"></span>' : '<span class="inactive-badge">Inactif</span>')}
       </div>
       <div class="team-members">
         <div class="member-row">
           <span class="member-icon">👤</span>
-          <input class="member-input" type="text" placeholder="Membre 1…" value="${teamData[i].m1}"
-            oninput="teamData[${i}].m1=this.value;" maxlength="22" ${active?'':'disabled'}>
+          <input class="member-input" type="text" placeholder="Membre 1…"
+            value="${teamData[teamNum].m1}" maxlength="22"
+            oninput="teamData[${teamNum}].m1=this.value;"
+            ${active?'':'disabled'}>
         </div>
         <div class="member-row">
           <span class="member-icon">👤</span>
-          <input class="member-input" type="text" placeholder="Membre 2…" value="${teamData[i].m2}"
-            oninput="teamData[${i}].m2=this.value;" maxlength="22" ${active?'':'disabled'}>
+          <input class="member-input" type="text" placeholder="Membre 2…"
+            value="${teamData[teamNum].m2}" maxlength="22"
+            oninput="teamData[${teamNum}].m2=this.value;"
+            ${active?'':'disabled'}>
         </div>
       </div>`;
+
+    if(active){
+      // Desktop DnD — only triggered from the handle
+      const handle = card.querySelector('.drag-handle');
+      handle.addEventListener('mousedown', () => { card.draggable = true; });
+
+      card.addEventListener('dragstart', e => {
+        dragSrcIdx = idx;
+        setTimeout(() => card.classList.add('dragging'), 0);
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+        grid.querySelectorAll('.team-card').forEach(c => c.classList.remove('drag-over'));
+        card.draggable = false;
+      });
+      card.addEventListener('dragover', e => {
+        e.preventDefault();
+        if(dragSrcIdx === null || dragSrcIdx === idx) return;
+        grid.querySelectorAll('.team-card').forEach(c => c.classList.remove('drag-over'));
+        card.classList.add('drag-over');
+      });
+      card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
+      card.addEventListener('drop', e => {
+        e.preventDefault();
+        card.classList.remove('drag-over');
+        if(dragSrcIdx === null || dragSrcIdx === idx) return;
+        const moved = seedOrder.splice(dragSrcIdx, 1)[0];
+        seedOrder.splice(idx, 0, moved);
+        dragSrcIdx = null;
+        initPools(); resetBracket(); renderTeamCards(); renderAll();
+      });
+
+      // Touch DnD for mobile
+      let touchSrcIdx = null, touchClone = null;
+      handle.addEventListener('touchstart', e => {
+        touchSrcIdx = idx;
+        card.classList.add('dragging');
+        // Create ghost
+        touchClone = card.cloneNode(true);
+        touchClone.style.cssText = `position:fixed;opacity:.7;pointer-events:none;z-index:9999;width:${card.offsetWidth}px;transform:scale(.97);border-radius:10px;`;
+        document.body.appendChild(touchClone);
+        const t = e.touches[0];
+        touchClone.style.left = (t.clientX - card.offsetWidth/2) + 'px';
+        touchClone.style.top  = (t.clientY - 30) + 'px';
+      }, {passive:true});
+
+      handle.addEventListener('touchmove', e => {
+        e.preventDefault();
+        const t = e.touches[0];
+        if(touchClone){ touchClone.style.left=(t.clientX-card.offsetWidth/2)+'px'; touchClone.style.top=(t.clientY-30)+'px'; }
+        // Highlight target
+        grid.querySelectorAll('.team-card').forEach(c => c.classList.remove('drag-over'));
+        const el = document.elementFromPoint(t.clientX, t.clientY);
+        const target = el?.closest('.team-card[data-seedidx]');
+        if(target && parseInt(target.dataset.seedidx) !== touchSrcIdx) target.classList.add('drag-over');
+      }, {passive:false});
+
+      handle.addEventListener('touchend', e => {
+        card.classList.remove('dragging');
+        if(touchClone){ touchClone.remove(); touchClone=null; }
+        grid.querySelectorAll('.team-card').forEach(c => c.classList.remove('drag-over'));
+        const t = e.changedTouches[0];
+        const el = document.elementFromPoint(t.clientX, t.clientY);
+        const target = el?.closest('.team-card[data-seedidx]');
+        const targetIdx = target ? parseInt(target.dataset.seedidx) : null;
+        if(targetIdx !== null && targetIdx !== touchSrcIdx){
+          const moved = seedOrder.splice(touchSrcIdx, 1)[0];
+          seedOrder.splice(targetIdx, 0, moved);
+          initPools(); resetBracket(); renderTeamCards(); renderAll();
+        }
+        touchSrcIdx = null;
+      }, {passive:true});
+    }
+
     grid.appendChild(card);
-  }
+  });
 
-  // Update pool summary in rules card
-  const cfg=poolConfigs[teamCount];
-  document.getElementById('pool-summary-rule').innerHTML=`<ul>
-    <li><strong style="color:var(--accent3)">Poule A:</strong> ${cfg.A.map(n=>'#'+n).join(' · ')}</li>
-    <li><strong style="color:var(--accent2)">Poule B:</strong> ${cfg.B.map(n=>'#'+n).join(' · ')}</li>
-    <li><strong style="color:var(--win)">Poule C:</strong> ${cfg.C.map(n=>'#'+n).join(' · ')}</li>
+  updatePoolSummary(cfg);
+}
+
+function updatePoolSummary(cfg){
+  const el = document.getElementById('pool-summary-rule');
+  if(!el) return;
+  el.innerHTML=`<ul>
+    <li><strong style="color:var(--accent3)">Pool A:</strong> ${cfg.A.map(n=>tname(n)).join(' · ')}</li>
+    <li><strong style="color:var(--accent2)">Pool B:</strong> ${cfg.B.map(n=>tname(n)).join(' · ')}</li>
+    <li><strong style="color:var(--win)">Pool C:</strong> ${cfg.C.map(n=>tname(n)).join(' · ')}</li>
   </ul>`;
-
-  // Qualification summary
   const sizes=[cfg.A.length,cfg.B.length,cfg.C.length];
   const has3rds=sizes.every(s=>s>=3);
   document.getElementById('qual-summary-rule').innerHTML=`<ul>
-    <li>Top 2 de chaque poule → qualifiés directs (6)</li>
-    ${has3rds?'<li>Meilleurs 2 troisièmes → qualifiés (2)</li>':'<li style="color:var(--accent2)">⚠️ Certaines poules n\'ont que 2 équipes — pas de 3es</li>'}
+    <li>Top 2 de chaque pool → qualifiés directs (6)</li>
+    ${has3rds?'<li>Meilleurs 2 troisièmes → qualifiés (2)</li>':'<li style="color:var(--accent2)">⚠️ Certaines pools n\'ont que 2 équipes — pas de 3es</li>'}
     <li>Total : 8 équipes en phase finale</li>
   </ul>`;
+}
+
+// Soft render: update standings/bracket without blowing up team cards
+function softRenderAll(){
+  const cfg = buildPoolConfig();
+  updatePoolSummary(cfg);
+  ['A','B','C'].forEach(p=>{ renderStandings(p); renderMatches(p); });
+  renderBracket();
 }
 
 // ─── RENDER STANDINGS ────────────────────────────────────────
@@ -619,6 +767,7 @@ function renderBracket(){
 
 // ─── RENDER ALL ──────────────────────────────────────────────
 function renderAll(){
+  renderTeamCards();
   ['A','B','C'].forEach(p=>{ renderStandings(p); renderMatches(p); });
   renderBracket();
 }
