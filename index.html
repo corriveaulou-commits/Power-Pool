@@ -142,6 +142,20 @@
   .b-team.q1{color:var(--accent);} .b-team.q2{color:var(--accent2);} .b-team.q3{color:#9ab0c8;}
   .seed-tag{font-size:.68rem;color:var(--muted);font-weight:600;white-space:nowrap;margin-left:8px;}
 
+  /* RESET MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s;}
+  .modal-overlay.open{opacity:1;pointer-events:all;}
+  .modal{background:var(--card);border:1px solid var(--lose);border-radius:14px;padding:28px 24px;max-width:360px;width:100%;text-align:center;}
+  .modal h2{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:2px;color:var(--lose);margin-bottom:10px;}
+  .modal p{font-size:.88rem;color:#b0b4c8;line-height:1.6;margin-bottom:22px;}
+  .modal-buttons{display:flex;gap:10px;justify-content:center;}
+  .modal-cancel{font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:600;padding:10px 22px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;}
+  .modal-cancel:hover{border-color:var(--text);color:var(--text);}
+  .modal-confirm{font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:600;padding:10px 22px;border-radius:8px;border:none;background:var(--lose);color:#fff;cursor:pointer;transition:opacity .15s;}
+  .modal-confirm:hover{opacity:.85;}
+  .reset-trigger{font-size:.72rem;color:var(--muted);background:transparent;border:1px solid var(--border);cursor:pointer;padding:4px 10px;border-radius:6px;transition:all .15s;opacity:.5;}
+  .reset-trigger:hover{opacity:1;color:var(--lose);border-color:var(--lose);}
+
   /* RULES */
   .rules-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-bottom:28px;}
   .rule-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px;}
@@ -170,6 +184,19 @@
 <div class="sync-bar">
   <div class="sync-dot" id="sync-dot"></div>
   <span id="sync-label">Connexion…</span>
+  <button class="reset-trigger" onclick="openResetModal()" title="Réinitialiser le tournoi">⟳ Réinitialiser</button>
+</div>
+
+<!-- RESET CONFIRMATION MODAL -->
+<div class="modal-overlay" id="reset-modal">
+  <div class="modal">
+    <h2>⚠️ Réinitialiser?</h2>
+    <p>Ceci va <strong style="color:var(--lose)">effacer toutes les données</strong> du tournoi sur tous les appareils — noms d'équipes, résultats, seeding et bracket. Cette action est irréversible.</p>
+    <div class="modal-buttons">
+      <button class="modal-cancel" onclick="closeResetModal()">Annuler</button>
+      <button class="modal-confirm" onclick="confirmReset()">Oui, tout effacer</button>
+    </div>
+  </div>
 </div>
 
 <!-- TEAM COUNT SELECTOR -->
@@ -926,6 +953,40 @@ function showTab(id,event){
   document.getElementById(id).classList.add('active');
   event.target.classList.add('active');
 }
+
+// ═══════════════════════════════════════════════════════
+// RESET MODAL
+// ═══════════════════════════════════════════════════════
+function openResetModal(){
+  document.getElementById('reset-modal').classList.add('open');
+}
+function closeResetModal(){
+  document.getElementById('reset-modal').classList.remove('open');
+}
+async function confirmReset(){
+  closeResetModal();
+  setSyncStatus('syncing', 'Réinitialisation…');
+  try {
+    await DOC.delete();
+    // Reset local state
+    teamCount = 15;
+    seedOrder = Array.from({length:15},(_,i)=>i+1);
+    for(let i=1;i<=15;i++) teamData[i]={name:'',m1:'',m2:''};
+    initPools(); resetBracket();
+    document.querySelectorAll('.count-btn').forEach(b=>b.classList.toggle('active',parseInt(b.textContent)===15));
+    document.getElementById('subtitle-text').textContent='15 équipes · 5 jeux · Power Pool';
+    renderTeamCards(); renderAll();
+    setSyncStatus('connected', 'Tournoi réinitialisé ✓');
+  } catch(e) {
+    console.error('Reset error:', e);
+    setSyncStatus('error', 'Erreur de réinitialisation');
+  }
+}
+
+// Close modal on overlay click
+document.getElementById('reset-modal').addEventListener('click', e => {
+  if(e.target === e.currentTarget) closeResetModal();
+});
 
 // ═══════════════════════════════════════════════════════
 // INIT — render defaults, then start Firebase listener
